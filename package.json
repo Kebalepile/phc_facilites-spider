@@ -1,0 +1,22 @@
+{
+  "name": "primary_health_care",
+  "version": "1.0.0",
+  "description": "phc facilites spider",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kebalepile/phc_facilites-spider.git"
+  },
+  "author": "K.T MOTSHOANA",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Kebalepile/phc_facilites-spider/issues"
+  },
+  "homepage": "https://github.com/Kebalepile/phc_facilites-spider#readme",
+  "dependencies": {
+    "selenium-webdriver": "^4.9.2"
+  }
+}
