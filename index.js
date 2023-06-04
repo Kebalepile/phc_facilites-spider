@@ -1,97 +1,99 @@
-import { Builder, Browser, By, Key, until } from "selenium-webdriver";
+import { launch } from "puppeteer";
 
-import repl from "repl";
+async function crawler() {
+  const browser = await launch({ headless: false });
 
-async function startRepl() {
-  let driver = await new Builder().forBrowser("firefox").build();
-  // let replServer = repl.start({prompt: '> '});
-  // replServer.context.driver = driver;
-  // replServer.context.By = By;
-  // replServer.context.Key = Key;
-  // replServer.context.until = until;
-  const spider = new PHC_SPIDER(driver);
-  spider.provinces();
+  const spider = new PHC_SPIDER(browser);
+  await spider.provincesData();
 }
 
-startRepl();
+crawler();
 
 class PHC_SPIDER {
-  constructor(driver) {
-    this.driver = driver;
+  constructor(browser) {
+    this.page = null;
+    this.browser = browser;
     this.allowedDomains = [
       "https://www.healthestablishments.org.za/Home/Facility",
     ];
     this.data = [];
-    this.provinceNames = [];
   }
-  async provinces() {
-    try {
-      await this.driver.get(this.allowedDomains[0]);
-      await this.driver.wait(until.elementLocated(By.css("body")), 50000);
-      let selector = await this.driver.findElement(By.id("province"));
-      let options = await selector.findElements(By.css("option"));
+  async setPage() {
+    this.page = await this.browser.newPage();
+  }
 
-      for (let option of options) {
-        let value = await option.getAttribute("value");
-        if (value !== "0") {
-          let textContent = await option.getText();
-          this.provinceNames.push(textContent);
+  /**
+   * @description scrape all the province's relative names.
+   */
+
+  async provincesData() {
+    try {
+      if (!this.page) {
+        await this.setPage();
+      }
+      await this.page.goto(this.allowedDomains[0]);
+      await this.page.waitForSelector("body");
+      let optionValues = await this.page.$$eval("#province option", (options) =>
+        options
+          .map((option) => ({ value: option.value, text: option.textContent }))
+          .filter((data) => data.value !== "0")
+      );
+
+      let iterator = this.destrictDataGenerator(optionValues);
+      for (let i = 0; i <= optionValues.length; i++) {
+        let { done, value } = iterator.next();
+        if (done) {
+          console.log("done");
+          console.log(this.data);
+        } else {
+          console.log(await value);
+          this.data.push(await value);
         }
       }
-
-      console.log(`Number of Provinces: ${this.provinceNames.length}`);
-      console.log(this.provinceNames);
-
-      if (this.provinceNames.length) this.provinceDistrcts();
-    } catch (error) {
-      // this.driver.quit();
-      console.log(error)
-    }
-  }
-  async provinceDistrcts() {
-    try {
-      let districts = [];
-      for (let province of this.provinceNames) {
-        let provinceData = {
-          province,
-          districts: {
-            numberOfDistricts: 0,
-            districtList: [],
-          },
-        };
-
-        let provinceSelector = await this.driver.findElement(By.id("province"));
-        let provinceOption = await provinceSelector.findElement(
-          By.xpath(`//option[contains(.,'${province}')]`)
-        );
-        provinceOption.click();
-       
-        let districtSelector = await this.driver.findElement(By.id("district"));
-        let districtOptions = await districtSelector.findElements(By.css("option"));
-
-        for (let districtOption of districtOptions) {
-          let text = await districtOption.getText();
-          if (
-            !["please select a district", "all"].includes(text.toLowerCase())
-          ) {
-            
-            provinceData.districts.districtList.push({ district: text });
-            provinceData.districts.numberOfDistricts += 1;
-          }
-        }
-        districts.push(provinceData);
-        console.log(provinceData.province)
-        console.log(provinceData.districts.districtList);
-      }
-      console.log(districts);
     } catch (error) {
       console.log(error);
     }
   }
-  async districtInfo() {
-    try {
-    } catch (error) {
-      console.log(error);
+
+  /**
+   * @param {array} optionValues
+   * @description Iterators over array of optionValue objects.
+   */
+
+  *destrictDataGenerator(optionValues) {
+    for (let optionValue of optionValues) {
+      yield this.privinceDistrictsData(optionValue);
     }
+  }
+
+  /**
+   *
+   * @param {object} optionData
+   * @returns province data object with province name and districts found in province.
+   */
+
+  async privinceDistrictsData(optionData) {
+    const selectElement = await this.page.$("#province");
+
+    await selectElement.select(optionData.value);
+    // Wait for the effects to take place
+    await this.page.waitForTimeout(10000); // Adjust the timeout as needed
+    const districtData = await this.page.$$eval("#district option", (options) =>
+      options
+        .map((option) => ({
+          value: option.value,
+          text: option.textContent,
+        }))
+        .filter((data) => !["0", "-1"].includes(data.value))
+    );
+    // console.log(optionData.text);
+    // console.log("Selected option: ", districtData);
+    return {
+      province: optionData.text,
+      districts: {
+        total: districtData.length,
+        names: districtData.map((data) => data.text),
+      },
+    };
   }
 }
