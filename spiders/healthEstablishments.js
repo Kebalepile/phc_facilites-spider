@@ -31,7 +31,7 @@ export class HealthEstablishmentsSpider {
 
   async provincesData() {
     try {
-      console.log("Getting province data.");
+      // console.log("Getting province data.");
 
       await this.page.goto(this.allowedDomains[0]);
       await this.page.waitForSelector("body");
@@ -78,23 +78,13 @@ export class HealthEstablishmentsSpider {
    */
 
   async privinceDistrictsData(optionData) {
-    console.log("Getting districts data of respective province.");
-    // const closeButton = await this.page.$(
-    //   'button.btn.btn-primary[data-dismiss="modal"]'
-    // );
-    // const isButtonVisible = await closeButton.isIntersectingViewport();
-
-    // if (isButtonVisible) {
-    //   await closeButton.click();
-    // } else {
-    //   console.log("Button is not visible.");
-    // }
+    // console.log("Getting districts data of respective province.");
 
     const selectElement = await this.page.$("#province");
 
     await selectElement.select(optionData.value);
     // Wait for the effects to take place
-    await this.page.waitForTimeout(10000); // Adjust the timeout as needed
+    await this.page.waitForTimeout(5000); // Adjust the timeout as needed
     const districtData = await this.page.$$eval("#district option", (options) =>
       options
         .map((option) => ({
@@ -104,7 +94,9 @@ export class HealthEstablishmentsSpider {
         .filter((data) => !["0", "-1"].includes(data.value))
     );
 
-    const districtIterator = this.healthCareFacilitiesGenerator(districtData);
+    const districtIterator = this.healthCareFacilitiesGenerator([
+      ...new Set(districtData),
+    ]);
 
     let districtFacilities = {
       numberOfHealthFacilities: 0,
@@ -120,7 +112,7 @@ export class HealthEstablishmentsSpider {
         districtFacilities.numberOfHealthFacilities = dataList?.length;
       }
     }
-console.log(districtFacilities)
+    console.log(districtFacilities);
     return {
       province: optionData.text,
       districts: {
@@ -136,18 +128,18 @@ console.log(districtFacilities)
    */
 
   async healthCareFacilities(district) {
-    console.log("Getting health care facilities data of respective district.");
+    // console.log("Getting health care facilities data of respective district.");
 
     const selectElement = await this.page.$("#district");
 
     await selectElement.select(district.value);
     // Wait for the effects to take place
-    await this.page.waitForTimeout(10000); // Adjust the timeout as needed
+    await this.page.waitForTimeout(5000); // Adjust the timeout as needed
     // =====
     const [button] = await this.page.$x('//*[@id="btnLoadMap"]');
     if (button) {
       button.click();
-      await this.page.waitForTimeout(10000);
+      await this.page.waitForTimeout(5000);
 
       const images = await this.page.$$(
         "img.leaflet-marker-icon.leaflet-zoom-animated.leaflet-interactive"
@@ -156,6 +148,7 @@ console.log(districtFacilities)
       const distrctFacilities = [];
 
       for (const image of images) {
+          await this.page.waitForTimeout(10000);
         await image.click();
         await this.page.waitForTimeout(10000);
 
@@ -166,7 +159,10 @@ console.log(districtFacilities)
         const closeButton = await this.page.$(
           'button.btn.btn-primary[data-dismiss="modal"]'
         );
-        await closeButton.click();
+        if (closeButton) {
+          await this.page.waitForTimeout(10000);
+          await closeButton.click();
+        }
         await this.page.waitForTimeout(10000);
       }
       return distrctFacilities;
@@ -179,7 +175,7 @@ console.log(districtFacilities)
     }
   }
   async facilityDetails() {
-    console.log("Getting facility information");
+    // console.log("Getting facility information");
     const facilityInfo = {};
 
     try {
@@ -198,21 +194,23 @@ console.log(districtFacilities)
 
         for (let row of tableRows) {
           const cells = await row.$$("th, td");
-        
+
           if (cells.length === 2) {
             const [keyCell, valueCell] = cells;
-            const key = await keyCell.evaluate((element) => element.textContent.trim());
-            const value = await valueCell.evaluate((element) => element.textContent.trim());
-        
+            const key = await keyCell.evaluate((element) =>
+              element.textContent.trim()
+            );
+            const value = await valueCell.evaluate((element) =>
+              element.textContent.trim()
+            );
+
             rowData[key] = value;
           }
         }
-        
 
         facilityInfo[headingText] = rowData;
       }
 
-      
       return facilityInfo;
     } catch (error) {
       console.log(error);
