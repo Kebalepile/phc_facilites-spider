@@ -16,6 +16,7 @@ export class HealthEstablishmentsSpider {
         await this.setPage();
       }
       console.log(`${this.name} spider, has began crawling for data.`);
+      
       this.provincesData();
     } catch (error) {
       consle.log(error);
@@ -78,49 +79,46 @@ export class HealthEstablishmentsSpider {
    */
 
   async privinceDistrictsData(optionData) {
-    // console.log("Getting districts data of respective province.");
+    try {
+      let selectElement = await this.page.$("#province");
 
-    const selectElement = await this.page.$("#province");
+      await selectElement.select(optionData.value);
+      // Wait for the effects to take place
+      await this.page.waitForTimeout(5000); // Adjust the timeout as needed
+      let districtOptions = await this.page.$$eval(
+        "#district option",
+        (options) =>
+          options
+            .map((option) => ({
+              value: option.value,
+              text: option.textContent,
+            }))
+            .filter((data) => !["0", "-1"].includes(data.value))
+      );
 
-    await selectElement.select(optionData.value);
-    // Wait for the effects to take place
-    await this.page.waitForTimeout(5000); // Adjust the timeout as needed
-    const districtData = await this.page.$$eval("#district option", (options) =>
-      options
-        .map((option) => ({
-          value: option.value,
-          text: option.textContent,
-        }))
-        .filter((data) => !["0", "-1"].includes(data.value))
-    );
+      let districtFacilities = {
+        numberOfHealthFacilities: 0,
+        primaryHealthFacilities: [],
+      };
 
-    const districtIterator = this.healthCareFacilitiesGenerator([
-      ...new Set(districtData),
-    ]);
+      for (let districtOption of districtOptions) {
+        let dataList = await this.healthCareFacilities(districtOption);
 
-    let districtFacilities = {
-      numberOfHealthFacilities: 0,
-      primaryHealthFacilities: [],
-    };
-
-    for (let i = 0; i < districtData.length; i++) {
-      let { done, value } = districtIterator.next();
-      console.log(await value);
-      if (done) {
-        let dataList = await value;
         districtFacilities.primaryHealthFacilities = dataList;
         districtFacilities.numberOfHealthFacilities = dataList?.length;
       }
+      console.log(districtFacilities);
+      return {
+        province: optionData.text,
+        districts: {
+          total: districtOptions.length,
+          names: districtOptions.map((data) => data.text),
+          districtFacilities,
+        },
+      };
+    } catch (error) {
+      console.log(error);
     }
-    console.log(districtFacilities);
-    return {
-      province: optionData.text,
-      districts: {
-        total: districtData.length,
-        names: districtData.map((data) => data.text),
-        districtFacilities,
-      },
-    };
   }
 
   /**
@@ -128,79 +126,78 @@ export class HealthEstablishmentsSpider {
    */
 
   async healthCareFacilities(district) {
-    // console.log("Getting health care facilities data of respective district.");
+    try {
+      let selectElement = await this.page.$("#district");
 
-    const selectElement = await this.page.$("#district");
+      await selectElement.select(district.value);
+      // Wait for the effects to take place
+      await this.page.waitForTimeout(5000); // Adjust the timeout as needed
 
-    await selectElement.select(district.value);
-    // Wait for the effects to take place
-    await this.page.waitForTimeout(5000); // Adjust the timeout as needed
-    // =====
-    const [button] = await this.page.$x('//*[@id="btnLoadMap"]');
-    if (button) {
-      button.click();
-      await this.page.waitForTimeout(5000);
+      let [button] = await this.page.$x('//*[@id="btnLoadMap"]');
+      if (button) {
+        button.click();
+        await this.page.waitForTimeout(5000);
 
-      const images = await this.page.$$(
-        "img.leaflet-marker-icon.leaflet-zoom-animated.leaflet-interactive"
-      );
-
-      const distrctFacilities = [];
-
-      for (const image of images) {
-          await this.page.waitForTimeout(10000);
-        await image.click();
-        await this.page.waitForTimeout(10000);
-
-        const facilityData = await this.facilityDetails();
-
-        console.log(facilityData);
-        distrctFacilities.push(facilityData);
-        const closeButton = await this.page.$(
-          'button.btn.btn-primary[data-dismiss="modal"]'
+        let images = await this.page.$$(
+          "img.leaflet-marker-icon.leaflet-zoom-animated.leaflet-interactive"
         );
-        if (closeButton) {
+
+        let districtFacilities = [];
+
+        for (let image of images) {
           await this.page.waitForTimeout(10000);
-          await closeButton.click();
+          await image.click();
+
+          await this.page.waitForTimeout(10000);
+
+          let facilityData = await this.facilityDetails();
+
+          console.log(facilityData);
+
+          districtFacilities.push(facilityData);
+
+          let closeButton = await this.page.$(
+            'button.btn.btn-primary[data-dismiss="modal"]'
+          );
+          if (closeButton) {
+            await this.page.waitForTimeout(10000);
+            await closeButton.click();
+            await this.page.waitForTimeout(10000);
+          }
         }
-        await this.page.waitForTimeout(10000);
+        return districtFacilities;
       }
-      return distrctFacilities;
-    }
-    // ====
-  }
-  *healthCareFacilitiesGenerator(districtOptions) {
-    for (let districtOption of districtOptions) {
-      yield this.healthCareFacilities(districtOption);
+    } catch (error) {
+      console.log(error);
     }
   }
+
   async facilityDetails() {
-    // console.log("Getting facility information");
-    const facilityInfo = {};
+    let facilityInfo = {};
 
     try {
-      const element = await this.page.$("#facilityAccordion");
-      const cardElements = await element.$$(".card");
+      let element = await this.page.$("#facilityAccordion");
+      let cardElements = await element.$$(".card");
 
       for (let cardElement of cardElements) {
-        const cardHeader = await cardElement.$(".card-header");
-        const headingText = await cardHeader.$$eval(
+        let cardHeader = await cardElement.$(".card-header");
+        let headingText = await cardHeader.$$eval(
           ".accordionHeading",
           (elements) => elements[0].textContent.trim()
         );
-        const cardBody = await cardElement.$(".card-body");
-        const tableRows = await cardBody.$$("tbody tr");
-        const rowData = {};
+        let cardBody = await cardElement.$(".card-body");
+        let tableRows = await cardBody.$$("tbody tr");
+        let rowData = {};
 
         for (let row of tableRows) {
-          const cells = await row.$$("th, td");
+          let cells = await row.$$("th, td");
 
           if (cells.length === 2) {
-            const [keyCell, valueCell] = cells;
-            const key = await keyCell.evaluate((element) =>
+            let [keyCell, valueCell] = cells;
+            let key = await keyCell.evaluate((element) =>
               element.textContent.trim()
             );
-            const value = await valueCell.evaluate((element) =>
+            let value = await valueCell.evaluate((element) =>
               element.textContent.trim()
             );
 
