@@ -17,7 +17,18 @@ export class HealthEstablishmentsSpider {
       }
       console.log(`${this.name} spider, has began crawling for data.`);
       
-      this.provincesData();
+      await this.provincesData();
+
+      if(this.data.length){
+     
+          toJson(this.data);
+          console.log(
+            `${this.name} spider finished crawling check for data in relevant files.`
+          );
+          return;
+        
+      }
+      console.log("No data scraped !!!")
     } catch (error) {
       consle.log(error);
     }
@@ -32,28 +43,22 @@ export class HealthEstablishmentsSpider {
 
   async provincesData() {
     try {
-      // console.log("Getting province data.");
+     
 
       await this.page.goto(this.allowedDomains[0]);
       await this.page.waitForSelector("body");
-      let optionValues = await this.page.$$eval("#province option", (options) =>
+      let provinceOptions = await this.page.$$eval("#province option", (options) =>
         options
           .map((option) => ({ value: option.value, text: option.textContent }))
           .filter((data) => data.value !== "0")
       );
 
-      let iterator = this.destrictDataGenerator(optionValues);
-      for (let i = 0; i <= optionValues.length; i++) {
-        let { done, value } = iterator.next();
-        if (done) {
-          toJson(this.data);
-          console.log(
-            `${this.name} spider finished crawling check for data in relevant files.`
-          );
-        } else {
-          this.data.push(await value);
-        }
+     
+      for (let provinceOption of provinceOptions){
+        let districtInfo = await this.privinceDistrictsData(provinceOption);
+        this.data.push( districtInfo)
       }
+      
     } catch (error) {
       console.log(error);
     } finally {
@@ -61,30 +66,20 @@ export class HealthEstablishmentsSpider {
     }
   }
 
-  /**
-   * @param {array} optionValues
-   * @description Iterators over array of optionValue objects.
-   */
-
-  *destrictDataGenerator(optionValues) {
-    for (let optionValue of optionValues) {
-      yield this.privinceDistrictsData(optionValue);
-    }
-  }
 
   /**
    *
-   * @param {object} optionData
+   * @param {object} option
    * @returns province data object with province name and districts found in province.
    */
 
-  async privinceDistrictsData(optionData) {
+  async privinceDistrictsData(option) {
     try {
       let selectElement = await this.page.$("#province");
 
-      await selectElement.select(optionData.value);
-      // Wait for the effects to take place
-      await this.page.waitForTimeout(5000); // Adjust the timeout as needed
+      await selectElement.select(option.value);
+      await this.page.waitForTimeout(5000); 
+
       let districtOptions = await this.page.$$eval(
         "#district option",
         (options) =>
@@ -98,18 +93,18 @@ export class HealthEstablishmentsSpider {
 
       let districtFacilities = {
         numberOfHealthFacilities: 0,
-        primaryHealthFacilities: [],
+        healthFacilities: [],
       };
 
       for (let districtOption of districtOptions) {
-        let dataList = await this.healthCareFacilities(districtOption);
+        let districtHealthFacilites = await this.healthCareFacilities(districtOption);
 
-        districtFacilities.primaryHealthFacilities = dataList;
-        districtFacilities.numberOfHealthFacilities = dataList?.length;
+        districtFacilities.healthFacilities = districtHealthFacilites;
+        districtFacilities.numberOfHealthFacilities = districtHealthFacilites?.length;
       }
       console.log(districtFacilities);
       return {
-        province: optionData.text,
+        province: option.text,
         districts: {
           total: districtOptions.length,
           names: districtOptions.map((data) => data.text),
@@ -145,10 +140,10 @@ export class HealthEstablishmentsSpider {
         let districtFacilities = [];
 
         for (let image of images) {
-          await this.page.waitForTimeout(10000);
+          await this.page.waitForTimeout(6000);
           await image.click();
 
-          await this.page.waitForTimeout(10000);
+          await this.page.waitForTimeout(6000);
 
           let facilityData = await this.facilityDetails();
 
@@ -159,10 +154,11 @@ export class HealthEstablishmentsSpider {
           let closeButton = await this.page.$(
             'button.btn.btn-primary[data-dismiss="modal"]'
           );
+          await this.page.waitForTimeout(6000);
           if (closeButton) {
-            await this.page.waitForTimeout(10000);
+            
             await closeButton.click();
-            await this.page.waitForTimeout(10000);
+            await this.page.waitForTimeout(6000);
           }
         }
         return districtFacilities;
