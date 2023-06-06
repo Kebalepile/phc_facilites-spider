@@ -2,8 +2,8 @@
     {
         "province": " Eastern Cape Province ",
         "districts": {
-            "total": 8,
-            "names": [
+            "totalDistricts": 8,
+            "districtNames": [
                 " Alfred Nzo District Municipality ",
                 " Amathole District Municipality ",
                 " Buffalo City Metropolitan Municipality ",
@@ -14,7 +14,7 @@
                 " Sarah Baartman District Municipality "
             ],
             "districtFacilities": {
-                "numberOfHealthFacilities": 0,
+                "numberOfHealthFacilites": 0,
                 "healthFacilities": []
             }
         }
@@ -22,22 +22,25 @@
     {
         "province": " Free State Province ",
         "districts": {
-            "total": 5,
-            "names": [
+            "totalDistricts": 5,
+            "districtNames": [
                 " Fezile Dabi District Municipality ",
                 " Lejweleputswa District Municipality ",
                 " Mangaung Metropolitan Municipality ",
                 " Thabo Mofutsanyana District Municipality ",
                 " Xhariep District Municipality "
             ],
-            "districtFacilities": {}
+            "districtFacilities": {
+                "numberOfHealthFacilites": 0,
+                "healthFacilities": []
+            }
         }
     },
     {
         "province": " Gauteng Province ",
         "districts": {
-            "total": 5,
-            "names": [
+            "totalDistricts": 5,
+            "districtNames": [
                 " City of Johannesburg Metropolitan Municipality ",
                 " City of Tshwane Metropolitan Municipality ",
                 " Ekurhuleni Metropolitan Municipality ",
@@ -45,7 +48,7 @@
                 " West Rand District Municipality "
             ],
             "districtFacilities": {
-                "numberOfHealthFacilities": 0,
+                "numberOfHealthFacilites": 0,
                 "healthFacilities": []
             }
         }
@@ -53,8 +56,8 @@
     {
         "province": " KwaZulu-Natal Province ",
         "districts": {
-            "total": 11,
-            "names": [
+            "totalDistricts": 11,
+            "districtNames": [
                 " Amajuba District Municipality ",
                 " eThekwini Metropolitan Municipality ",
                 " Harry Gwala District Municipality ",
@@ -68,7 +71,7 @@
                 " Zululand District Municipality "
             ],
             "districtFacilities": {
-                "numberOfHealthFacilities": 0,
+                "numberOfHealthFacilites": 0,
                 "healthFacilities": []
             }
         }
@@ -76,8 +79,8 @@
     {
         "province": " Limpopo Province ",
         "districts": {
-            "total": 5,
-            "names": [
+            "totalDistricts": 5,
+            "districtNames": [
                 " Capricorn District Municipality ",
                 " Mopani District Municipality ",
                 " Sekhukhune District Municipality ",
@@ -85,7 +88,7 @@
                 " Waterberg District Municipality "
             ],
             "districtFacilities": {
-                "numberOfHealthFacilities": 0,
+                "numberOfHealthFacilites": 0,
                 "healthFacilities": []
             }
         }
@@ -93,14 +96,14 @@
     {
         "province": " Mpumalanga Province ",
         "districts": {
-            "total": 3,
-            "names": [
+            "totalDistricts": 3,
+            "districtNames": [
                 " Ehlanzeni District Municipality ",
                 " Gert Sibande District Municipality ",
                 " Nkangala District Municipality "
             ],
             "districtFacilities": {
-                "numberOfHealthFacilities": 0,
+                "numberOfHealthFacilites": 0,
                 "healthFacilities": []
             }
         }
@@ -108,15 +111,15 @@
     {
         "province": " North West Province ",
         "districts": {
-            "total": 4,
-            "names": [
+            "totalDistricts": 4,
+            "districtNames": [
                 " Bojanala Platinum District Municipality ",
                 " Dr Kenneth Kaunda District Municipality ",
                 " Dr Ruth Segomotsi Mompati District Municipality ",
                 " Ngaka Modiri Molema District Municipality "
             ],
             "districtFacilities": {
-                "numberOfHealthFacilities": 0,
+                "numberOfHealthFacilites": 0,
                 "healthFacilities": []
             }
         }
@@ -124,8 +127,8 @@
     {
         "province": " Northern Cape Province ",
         "districts": {
-            "total": 5,
-            "names": [
+            "totalDistricts": 5,
+            "districtNames": [
                 " Frances Baard District Municipality ",
                 " John Taolo Gaetsewe District Municipality ",
                 " Namakwa District Municipality ",
@@ -133,7 +136,7 @@
                 " Zwelentlanga Fatman Mgcawu District Municipality "
             ],
             "districtFacilities": {
-                "numberOfHealthFacilities": 0,
+                "numberOfHealthFacilites": 0,
                 "healthFacilities": []
             }
         }
@@ -141,8 +144,8 @@
     {
         "province": " Western Cape Province ",
         "districts": {
-            "total": 6,
-            "names": [
+            "totalDistricts": 6,
+            "districtNames": [
                 " Cape Winelands District Municipality ",
                 " Central Karoo District Municipality ",
                 " City of Cape Town Metropolitan Municipality ",
@@ -151,7 +154,7 @@
                 " West Coast District Municipality "
             ],
             "districtFacilities": {
-                "numberOfHealthFacilities": 0,
+                "numberOfHealthFacilites": 0,
                 "healthFacilities": []
             }
         }

@@ -75,9 +75,10 @@ export class HealthEstablishmentsSpider {
 
   async privinceDistrictsData(option) {
     try {
-      let selectElement = await this.page.$("#province");
+      let selectElement = await this.page.waitForSelector("#province");
 
       await selectElement.select(option.value);
+      await selectElement.dispose();
       await this.page.waitForTimeout(5000);
 
       let districtOptions = await this.page.$$eval(
@@ -98,7 +99,7 @@ export class HealthEstablishmentsSpider {
           districtNames: districtOptions.map((data) => data.text),
           districtFacilities: {
             numberOfHealthFacilites: 0,
-            healthFacilities: [],
+            healthFacilities: {},
           },
         },
       };
@@ -106,11 +107,12 @@ export class HealthEstablishmentsSpider {
         let districtHealthFacilities = await this.healthCareFacilities(
           districtOption
         );
-        completeProvinceData.districts.districtFacilities.healthFacilities.concat(
+
+        completeProvinceData.districts.districtFacilities.healthFacilities[districtOption.text] = {
+          total:districtHealthFacilities.length,
           districtHealthFacilities
-        );
-        completeProvinceData.districts.districtFacilities.numberOfHealthFacilites =
-          completeProvinceData.districts.districtFacilities.healthFacilities.length;
+        };
+        completeProvinceData.districts.districtFacilities.numberOfHealthFacilites += districtHealthFacilities.length;
       }
       console.log(completeProvinceData);
       return completeProvinceData;
@@ -124,88 +126,64 @@ export class HealthEstablishmentsSpider {
    */
 
   async healthCareFacilities(district) {
-    let districtHealthFacilities = [];
+    
     try {
-      let selectElement = await this.page.$("#district");
+      let selectElement = await this.page.waitForSelector("#district");
 
       await selectElement.select(district.value);
-      // Wait for the effects to take place
-      await this.page.waitForTimeout(5000); // Adjust the timeout as needed
 
-      let [button] = await this.page.$x('//*[@id="btnLoadMap"]');
-      if (button) {
-        button.click();
-        await this.page.waitForTimeout(5000);
+      await selectElement.dispose();
 
-        let images = await this.page.$$(
-          "img.leaflet-marker-icon.leaflet-zoom-animated.leaflet-interactive"
-        );
+      await this.page.waitForTimeout(5000);
 
-        for (let image of images) {
-     
-          await image.click();
-          await this.page.waitForTimeout(5000);
-         
+      await this.page.click("#btnLoadMap");
 
-          let facilityData = await this.facilityDetails();
+      await this.page.waitForTimeout(10000);
+      let districtHealthFacilities = await this.page.evaluate(() => {
+        const facilityInfo = () => {
+          let info = {};
+          let element = document.querySelector("#facilityAccordion");
+          let cardElements = element.querySelectorAll(".card");
 
-          console.log(facilityData);
+          for (let cardElement of cardElements) {
+            let cardHeader = cardElement.querySelector(".card-header");
+            let headingText = cardHeader
+              .querySelector(".accordionHeading")
+              .textContent.trim();
+            let cardBody = cardElement.querySelector(".card-body");
+            let tableRows = cardBody.querySelectorAll("tbody tr");
+            let rowData = {};
 
-          districtHealthFacilities.push(facilityData);
+            for (let row of tableRows) {
+              let cells = row.querySelectorAll("th, td");
 
-          
-          // Click the close button inside the modal
-          let closeButton = await this.page.$(".modal.fade.in button.close");
-          if (closeButton) {
-            await this.page.waitForTimeout(10000)
-            await closeButton.click();
+              if (cells.length === 2) {
+                let [keyCell, valueCell] = cells;
+                let key = keyCell.textContent.trim();
+                let value = valueCell.textContent.trim();
+
+                rowData[key] = value;
+              }
+            }
+
+            info[headingText] = rowData;
           }
-        }
+          return info;
+        };
         
-      }
-      return districtHealthFacilities;
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  async facilityDetails() {
-    let facilityInfo = {};
-
-    try {
-      let element = await this.page.$("#facilityAccordion");
-      let cardElements = await element.$$(".card");
-
-      for (let cardElement of cardElements) {
-        let cardHeader = await cardElement.$(".card-header");
-        let headingText = await cardHeader.$$eval(
-          ".accordionHeading",
-          (elements) => elements[0].textContent.trim()
-        );
-        let cardBody = await cardElement.$(".card-body");
-        let tableRows = await cardBody.$$("tbody tr");
-        let rowData = {};
-
-        for (let row of tableRows) {
-          let cells = await row.$$("th, td");
-
-          if (cells.length === 2) {
-            let [keyCell, valueCell] = cells;
-            let key = await keyCell.evaluate((element) =>
-              element.textContent.trim()
-            );
-            let value = await valueCell.evaluate((element) =>
-              element.textContent.trim()
-            );
-
-            rowData[key] = value;
-          }
+        let dataList = [];
+        let imageElements = document.querySelectorAll(".leaflet-marker-icon");
+        for (let imageElement of imageElements) {
+          imageElement.click();
+          let facilityData = facilityInfo();
+          dataList.push(facilityData);
         }
 
-        facilityInfo[headingText] = rowData;
-      }
+        return dataList;
+      });
 
-      return facilityInfo;
+     
+      return await districtHealthFacilities;
     } catch (error) {
       console.log(error);
     }
