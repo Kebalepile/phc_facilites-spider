@@ -62,9 +62,10 @@ export class HealthEstablishmentsSpider {
       }
     } catch (error) {
       console.log(error);
-    } finally {
-      this.browser.close();
     }
+    // finally {
+    //   // this.browser.close();
+    // }
   }
 
   /**
@@ -108,11 +109,14 @@ export class HealthEstablishmentsSpider {
           districtOption
         );
 
-        completeProvinceData.districts.districtFacilities.healthFacilities[districtOption.text] = {
-          total:districtHealthFacilities.length,
-          districtHealthFacilities
+        completeProvinceData.districts.districtFacilities.healthFacilities[
+          districtOption.text
+        ] = {
+          total: districtHealthFacilities.length,
+          districtHealthFacilities,
         };
-        completeProvinceData.districts.districtFacilities.numberOfHealthFacilites += districtHealthFacilities.length;
+        completeProvinceData.districts.districtFacilities.numberOfHealthFacilites +=
+          districtHealthFacilities.length;
       }
       console.log(completeProvinceData);
       return completeProvinceData;
@@ -126,7 +130,6 @@ export class HealthEstablishmentsSpider {
    */
 
   async healthCareFacilities(district) {
-    
     try {
       let selectElement = await this.page.waitForSelector("#district");
 
@@ -139,51 +142,104 @@ export class HealthEstablishmentsSpider {
       await this.page.click("#btnLoadMap");
 
       await this.page.waitForTimeout(10000);
+
       let districtHealthFacilities = await this.page.evaluate(() => {
         const facilityInfo = () => {
           let info = {};
+
           let element = document.querySelector("#facilityAccordion");
-          let cardElements = element.querySelectorAll(".card");
+          let cardElements = Array.from(element.querySelectorAll(".card"));
 
-          for (let cardElement of cardElements) {
-            let cardHeader = cardElement.querySelector(".card-header");
-            let headingText = cardHeader
-              .querySelector(".accordionHeading")
-              .textContent.trim();
-            let cardBody = cardElement.querySelector(".card-body");
-            let tableRows = cardBody.querySelectorAll("tbody tr");
-            let rowData = {};
+          if (cardElements.length > 0) {
+            for (let cardElement of cardElements) {
+              let cardHeader = cardElement.querySelector(".card-header");
+              let headingText = cardHeader
+                .querySelector(".accordionHeading")
+                .textContent.trim();
+              let cardBody = cardElement.querySelector(".card-body");
+              let tableRows = cardBody.querySelectorAll("tbody tr");
+              let rowData = {};
 
-            for (let row of tableRows) {
-              let cells = row.querySelectorAll("th, td");
+              for (let row of tableRows) {
+                let cells = row.querySelectorAll("th, td");
 
-              if (cells.length === 2) {
-                let [keyCell, valueCell] = cells;
-                let key = keyCell.textContent.trim();
-                let value = valueCell.textContent.trim();
+                if (cells.length === 2) {
+                  let [keyCell, valueCell] = cells;
+                  let key = keyCell.textContent.trim();
+                  let value = valueCell.textContent.trim();
 
-                rowData[key] = value;
+                  rowData[key] = value;
+                }
               }
-            }
 
-            info[headingText] = rowData;
+              info[headingText] = rowData;
+            }
           }
+          const closeButton = Array.from(document.querySelectorAll(".close"));
+          closeButton[0].click();
+        console.log(info)
           return info;
         };
-        
-        let dataList = [];
-        let imageElements = document.querySelectorAll(".leaflet-marker-icon");
-        for (let imageElement of imageElements) {
-          imageElement.click();
-          let facilityData = facilityInfo();
-          dataList.push(facilityData);
-        }
+        const facilitiesInfo = () => {
+          const facilitiesList = [];
+          let imageElements = document.querySelectorAll(
+            ".leaflet-marker-icon"
+          );
 
-        return dataList;
+          console.log(imageElements.length);
+
+          if (imageElements.length > 0) {
+            for (let imageElement of imageElements) {
+              imageElement.click();
+              facilitiesList.push(facilityInfo());
+            }
+          }
+          return facilitiesList;
+        };
+        
+        const label = document.querySelector("#item_description");
+        // let imageElementsParent = document.querySelector(".leaflet-marker-pane");
+
+        const prevTextContent = label.textContent;
+
+        const observer = new MutationObserver((mutationList) => {
+         
+          // if (prevTextContent == "Primary Health Care facilities in Alfred Nzo District Municipality") {
+          //   console.log("===1===")
+          //     console.log(facilitiesInfo());
+          //    console.log("===1===")
+          // }
+          for (const mutation of mutationList) {
+
+            if (mutation.type === "childList") {
+              if(mutation.target.classList.contains("leaflet-marker-pane") && mutation.target.childNodes.length > 0){
+                console.log(facilitiesInfo())
+              }
+              // if (
+              //   mutation.target == label &&
+              //   mutation.target.textContent !== prevTextContent
+              // ) {
+              
+              //   for(const m2 of mutationList){
+              //     if(m2.target.classList.contains("leaflet-marker-pane") && m2.target.childNodes.length > 0 ){
+                    // console.log(facilitiesInfo());
+                   
+              //     }
+              //   }
+              // }
+            }
+          }
+          //  observer.disconnect();
+           return
+        });
+        observer.observe(document.querySelector('.leaflet-marker-pane'), {
+          childList: true,
+          subtree: true,
+        });
       });
 
-     
-      return await districtHealthFacilities;
+      console.log(districtHealthFacilities);
+      return [];
     } catch (error) {
       console.log(error);
     }
