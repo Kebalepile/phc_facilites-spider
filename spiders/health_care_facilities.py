@@ -46,7 +46,7 @@ class Health_Facilities_Spider:
                 "districts": {"total": len(data["district_names"]),
                               "district_names": data["district_names"]},
                 "health_facilities": data["district_health_facilities"]})
-            save_to_database(self.data)
+
         save_to_database(self.data)
 
     async def province_districts(self, province_selector, province_option):
@@ -180,7 +180,6 @@ class Health_Facilities_Spider:
 
         self.driver.execute_script("arguments[0].click()", dialog_background)
 
-       
         # ==============================
         print(raw_info)
         # ==============================
