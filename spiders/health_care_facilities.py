@@ -1,4 +1,4 @@
-from pipline.clean_data import refine_data
+
 from pipline.save_data import save_to_database
 import time
 from selenium import webdriver
@@ -180,10 +180,10 @@ class Health_Facilities_Spider:
 
         self.driver.execute_script("arguments[0].click()", dialog_background)
 
-        refined_info = refine_data(raw_info)
+       
         # ==============================
-        print(refined_info)
+        print(raw_info)
         # ==============================
         time.sleep(6)
 
-        return refined_info
+        return raw_info
