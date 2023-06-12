@@ -1,11 +1,11 @@
-
-from pipline.save_data import save_to_database
 import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import StaleElementReferenceException
+from pipline.save_data import save_to_database
+
 
 class Health_Facilities_Spider:
     name = "health facilities spider"
@@ -40,10 +40,11 @@ class Health_Facilities_Spider:
 
             options = [{"text": option.text, "value": option.get_attribute(
                 "value")} for option in options if option.get_attribute("value") != "0"]
-            
-            if len(self.province_option_values)  > 0 :
+
+            if len(self.province_option_values) > 0:
                 last_option = self.province_option_values[-1]
-                index = next((index for index, option in enumerate(options) if option["value"] == last_option["value"]), None)
+                index = next((index for index, option in enumerate(
+                    options) if option["value"] == last_option["value"]), None)
                 if index is not None:
                     options = options[index:]
 
@@ -53,15 +54,14 @@ class Health_Facilities_Spider:
                 self.data.append({
                     "province": option["text"],
                     "districts": {"total": len(data["district_names"]),
-                                "district_names": data["district_names"]},
+                                  "district_names": data["district_names"]},
                     "health_facilities": data["district_health_facilities"]})
 
             save_to_database(self.data)
 
         except StaleElementReferenceException:
-             self.driver.refresh()
-             await self.run()
-    
+            self.driver.refresh()
+            await self.run()
 
     async def province_districts(self, province_selector, province_option):
         district_names = []
@@ -70,53 +70,58 @@ class Health_Facilities_Spider:
             "facilities": {}
         }
 
-        select_element = Select(province_selector)
+        try:
+            select_element = Select(province_selector)
 
-        select_element.select_by_value(province_option['value'])
+            select_element.select_by_value(province_option['value'])
 
-        wait = WebDriverWait(self.driver, 50)
+            wait = WebDriverWait(self.driver, 50)
 
-        district_selector = wait.until(
-            EC.presence_of_element_located((By.ID, "district")))
+            district_selector = wait.until(
+                EC.presence_of_element_located((By.ID, "district")))
 
-        options_found = wait.until(lambda _: len(
-            self.driver.find_elements(By.CSS_SELECTOR, '#district option')) > 1)
-        # -----------------------------------------------
-        print("Options found : ", options_found)
-        # -----------------------------------------------
-        district_options = []
+            options_found = wait.until(lambda _: len(
+                self.driver.find_elements(By.CSS_SELECTOR, '#district option')) > 1)
+            # -----------------------------------------------
+            print("Options found : ", options_found)
+            # -----------------------------------------------
+            district_options = []
 
-        if options_found:
+            if options_found:
 
-            district_options = self.driver.find_elements(
-                By.CSS_SELECTOR, '#district option')
+                district_options = self.driver.find_elements(
+                    By.CSS_SELECTOR, '#district option')
 
-        district_select = Select(district_selector)
+            district_select = Select(district_selector)
 
-        for option in district_options:
-            text = option.text.strip()
-            value = option.get_attribute("value")
+            for option in district_options:
+                text = option.text.strip()
+                value = option.get_attribute("value")
 
-            if int(value) not in [0, -1]:
-                print(f"{text} Health Facilities: ")
+                if int(value) not in [0, -1]:
+                    print(f" \n {text} Health Facilities: \n")
 
-                district_names.append(text)
+                    district_names.append(text)
 
-                district_select.select_by_value(value)
-                self.driver.execute_script(
-                    f"arguments[0].value='{value}';", district_selector)
+                    district_select.select_by_value(value)
+                    self.driver.execute_script(
+                        f"arguments[0].value='{value}';", district_selector)
 
-                health_facilities = await self.district_health_facilities(text)
+                    health_facilities = await self.district_health_facilities(text)
 
-                district_health_facilities["facilities"][text.replace(
-                    " ", "_")] = health_facilities
+                    district_health_facilities["facilities"][text.replace(
+                        " ", "_")] = health_facilities
 
-                district_health_facilities["total"] += len(health_facilities)
+                    district_health_facilities["total"] += len(
+                        health_facilities)
 
-        return {
-            "district_names": district_names,
-            "district_health_facilities": district_health_facilities
-        }
+            return {
+                "district_names": district_names,
+                "district_health_facilities": district_health_facilities
+            }
+        except StaleElementReferenceException:
+            self.driver.refresh()
+            await self.run()
 
     async def district_health_facilities(self, district_name):
         health_facilities = []
