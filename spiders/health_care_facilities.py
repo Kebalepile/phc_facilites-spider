@@ -5,7 +5,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
+from selenium.common.exceptions import StaleElementReferenceException
 
 class Health_Facilities_Spider:
     name = "health facilities spider"
@@ -17,6 +17,7 @@ class Health_Facilities_Spider:
         options.add_argument("--headless")
         self.driver = webdriver.Chrome()
         self.data = []
+        self.province_option_values = []
 
     async def run(self):
 
@@ -29,25 +30,38 @@ class Health_Facilities_Spider:
         self.driver.quit()
 
     async def province_data(self):
-        wait = WebDriverWait(self.driver, 50)
+        try:
+            wait = WebDriverWait(self.driver, 50)
 
-        selector = wait.until(
-            EC.presence_of_element_located((By.ID, "province")))
+            selector = wait.until(
+                EC.presence_of_element_located((By.ID, "province")))
 
-        options = selector.find_elements(By.TAG_NAME, "option")
+            options = selector.find_elements(By.TAG_NAME, "option")
 
-        options = [{"text": option.text, "value": option.get_attribute(
-            "value")} for option in options if option.get_attribute("value") != "0"]
+            options = [{"text": option.text, "value": option.get_attribute(
+                "value")} for option in options if option.get_attribute("value") != "0"]
+            
+            if len(self.province_option_values)  > 0 :
+                last_option = self.province_option_values[-1]
+                index = next((index for index, option in enumerate(options) if option["value"] == last_option["value"]), None)
+                if index is not None:
+                    options = options[index:]
 
-        for option in options:
-            data = await self.province_districts(selector, option)
-            self.data.append({
-                "province": option["text"],
-                "districts": {"total": len(data["district_names"]),
-                              "district_names": data["district_names"]},
-                "health_facilities": data["district_health_facilities"]})
+            for option in options:
+                self.province_option_values.append(option)
+                data = await self.province_districts(selector, option)
+                self.data.append({
+                    "province": option["text"],
+                    "districts": {"total": len(data["district_names"]),
+                                "district_names": data["district_names"]},
+                    "health_facilities": data["district_health_facilities"]})
 
-        save_to_database(self.data)
+            save_to_database(self.data)
+
+        except StaleElementReferenceException:
+             self.driver.refresh()
+             await self.run()
+    
 
     async def province_districts(self, province_selector, province_option):
         district_names = []
