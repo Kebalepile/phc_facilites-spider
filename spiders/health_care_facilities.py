@@ -15,7 +15,7 @@ class Health_Facilities_Spider:
             "https://www.healthestablishments.org.za/Home/Facility"]
         options = webdriver.ChromeOptions()
         options.add_argument("--headless")
-        self.driver = webdriver.Chrome()
+        self.driver = webdriver.Chrome(options=options)
         self.data = []
         self.province_option_values = []
 
