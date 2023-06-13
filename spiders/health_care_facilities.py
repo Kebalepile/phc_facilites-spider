@@ -1,10 +1,10 @@
 import time
+import json
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import StaleElementReferenceException
-from pipline.save_data import save_to_database
 
 
 class Health_Facilities_Spider:
@@ -13,11 +13,36 @@ class Health_Facilities_Spider:
     def __init__(self):
         self.allowed_domains = [
             "https://www.healthestablishments.org.za/Home/Facility"]
-        options = webdriver.ChromeOptions()
+        options = webdriver.FirefoxOptions()
         options.add_argument("--headless")
-        self.driver = webdriver.Chrome(options=options)
+        self.driver = webdriver.Firefox(options=options)
         self.data = []
         self.province_option_values = []
+
+    async def save_to_database(self, file_name="data"):
+        if len(self.data) > 0:
+
+            with open(f"database/{file_name}.json", "w") as file:
+                json.dump(self.data, file, indent=4)
+            print("Data saved in the database folder.")
+        else:
+            print("No data scraped.")
+
+    async def refine_data(self, raw_info):
+        processed_data = {}
+        for key, value in raw_info.items():
+            if isinstance(value, dict):
+                processed_data[key.replace(" ", "_")] = await self.refine_data(value)
+            else:
+                lowercase_key = key.lower()
+                if lowercase_key == "latitude" or lowercase_key == "longitude" or "/" in key:
+                    processed_data[key] = value
+                else:
+                    try:
+                        processed_data[key.replace(" ", "_")] = int(value)
+                    except ValueError:
+                        processed_data[key.replace(" ", "_")] = value
+        return processed_data
 
     async def run(self):
 
@@ -57,7 +82,7 @@ class Health_Facilities_Spider:
                                   "district_names": data["district_names"]},
                     "health_facilities": data["district_health_facilities"]})
 
-            save_to_database(self.data)
+            await self.save_to_database()
 
         except StaleElementReferenceException:
             self.driver.refresh()
@@ -198,10 +223,10 @@ class Health_Facilities_Spider:
             By.XPATH, './/div[contains(@class, "modal-header")]//button[@data-dismiss="modal"]')
 
         self.driver.execute_script("arguments[0].click()", dialog_background)
-
+        info = await self.refine_data(raw_info)
         # ==============================
-        print(raw_info)
+        print(info)
         # ==============================
         time.sleep(6)
 
-        return raw_info
+        return info
