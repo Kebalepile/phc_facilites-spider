@@ -1,5 +1,6 @@
 import time
 import json
+import os.path
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select, WebDriverWait
@@ -13,11 +14,12 @@ class Health_Facilities_Spider:
     def __init__(self):
         self.allowed_domains = [
             "https://www.healthestablishments.org.za/Home/Facility"]
-        options = webdriver.FirefoxOptions()
+        options = webdriver.ChromeOptions()
         options.add_argument("--headless")
-        self.driver = webdriver.Firefox(options=options)
+        self.driver = webdriver.Chrome(options=options)
         self.data = []
         self.province_option_values = []
+        self.province_names = []
 
     async def save_to_database(self, file_name="data"):
         if len(self.data) > 0:
@@ -32,11 +34,13 @@ class Health_Facilities_Spider:
         processed_data = {}
         for key, value in raw_info.items():
             if isinstance(value, dict):
-                processed_data[key.replace(" ", "_")] = await self.refine_data(value)
+                processed_data[key.replace(" ", "_").replace(",","")] = await self.refine_data(value)
             else:
                 lowercase_key = key.lower()
-                if lowercase_key == "latitude" or lowercase_key == "longitude" or "/" in key:
-                    processed_data[key] = value
+
+                if lowercase_key == "latitude" or lowercase_key == "longitude":
+                    processed_data[lowercase_key] = value
+                
                 else:
                     try:
                         processed_data[key.replace(" ", "_")] = int(value)
@@ -47,6 +51,16 @@ class Health_Facilities_Spider:
     async def run(self):
 
         print(f"{self.name} has begun crawling for data.")
+
+        file_path = os.path.join('database', 'data.json')
+
+        if os.path.isfile(file_path):
+            with open(file_path, 'r') as f:
+                f_data = json.load(f)
+                if isinstance(f_data, list) and len(f_data) > 0:
+                    self.data.extend(f_data)
+                    for province in f_data:
+                        self.province_names.append(province["province"])
 
         self.driver.get(self.allowed_domains[0])
         tab_title = "Primary Health Care facilities - Primary Health Care Facility"
@@ -66,6 +80,10 @@ class Health_Facilities_Spider:
             options = [{"text": option.text, "value": option.get_attribute(
                 "value")} for option in options if option.get_attribute("value") != "0"]
 
+            if len(self.province_names) > 0:
+                options = [option for option in options if option["text"]
+                           not in self.province_names]
+
             if len(self.province_option_values) > 0:
                 last_option = self.province_option_values[-1]
                 index = next((index for index, option in enumerate(
@@ -81,6 +99,7 @@ class Health_Facilities_Spider:
                     "districts": {"total": len(data["district_names"]),
                                   "district_names": data["district_names"]},
                     "health_facilities": data["district_health_facilities"]})
+                
 
             await self.save_to_database()
 
