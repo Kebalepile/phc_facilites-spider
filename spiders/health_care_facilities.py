@@ -99,6 +99,7 @@ class Health_Facilities_Spider:
                     "districts": {"total": len(data["district_names"]),
                                   "district_names": data["district_names"]},
                     "health_facilities": data["district_health_facilities"]})
+                await self.save_to_database()
                 
 
             await self.save_to_database()
