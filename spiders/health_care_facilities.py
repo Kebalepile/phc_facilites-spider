@@ -1,3 +1,4 @@
+import re
 import time
 import json
 import os.path
@@ -21,33 +22,6 @@ class Health_Facilities_Spider:
         self.province_option_values = []
         self.province_names = []
 
-    async def save_to_database(self, file_name="data"):
-        if len(self.data) > 0:
-
-            with open(f"database/{file_name}.json", "w") as file:
-                json.dump(self.data, file, indent=4)
-            print("Data saved in the database folder.")
-        else:
-            print("No data scraped.")
-
-    async def refine_data(self, raw_info):
-        processed_data = {}
-        for key, value in raw_info.items():
-            if isinstance(value, dict):
-                processed_data[key.replace(" ", "_").replace(",","")] = await self.refine_data(value)
-            else:
-                lowercase_key = key.lower()
-
-                if lowercase_key == "latitude" or lowercase_key == "longitude":
-                    processed_data[lowercase_key] = value
-                
-                else:
-                    try:
-                        processed_data[key.replace(" ", "_")] = int(value)
-                    except ValueError:
-                        processed_data[key.replace(" ", "_")] = value
-        return processed_data
-
     async def run(self):
 
         print(f"{self.name} has begun crawling for data.")
@@ -64,6 +38,7 @@ class Health_Facilities_Spider:
 
         self.driver.get(self.allowed_domains[0])
         tab_title = "Primary Health Care facilities - Primary Health Care Facility"
+
         assert tab_title in self.driver.title
         await self.province_data()
         self.driver.quit()
@@ -100,7 +75,6 @@ class Health_Facilities_Spider:
                                   "district_names": data["district_names"]},
                     "health_facilities": data["district_health_facilities"]})
                 await self.save_to_database()
-                
 
             await self.save_to_database()
 
@@ -250,3 +224,32 @@ class Health_Facilities_Spider:
         time.sleep(6)
 
         return info
+
+    async def refine_data(self, raw_info):
+        processed_data = {}
+        for key, value in raw_info.items():
+            key = re.sub(r'[ ,/]', '_', key)
+
+            if isinstance(value, dict):
+                processed_data[key] = await self.refine_data(value)
+            else:
+                lowercase_key = key.lower()
+
+                if lowercase_key == "latitude" or lowercase_key == "longitude":
+                    processed_data[key] = value
+
+                else:
+                    try:
+                        processed_data[key] = int(value)
+                    except ValueError:
+                        processed_data[key] = value
+        return processed_data
+
+    async def save_to_database(self, file_name="data"):
+        if len(self.data) > 0:
+
+            with open(f"database/{file_name}.json", "w") as file:
+                json.dump(self.data, file, indent=4)
+            print("Data saved in the database folder.")
+        else:
+            print("No data scraped.")
