@@ -1,6 +1,6 @@
 # Primary Health Care Facilities Scraper
 
-This project is a web scraper that collects data on primary health care facilities from the [South African Health Establishments websit](https://www.healthestablishments.org.za/Home/Facility). The scraper is written in Python and uses the Selenium library to interact with web pages and extract data.
+This project is a web scraper that collects data on primary health care facilities from the [South African Health Establishments website](https://www.healthestablishments.org.za/Home/Facility). The scraper is written in Python and uses the Selenium library to interact with web pages and extract data.
 
 ## Installation
 To install the scraper, you will need to have Python 3.x installed on your computer. You can download Python from the [official website](https://www.python.org/downloads/).
