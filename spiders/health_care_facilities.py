@@ -66,6 +66,10 @@ class Health_Facilities_Spider:
                 if index is not None:
                     options = options[index:]
 
+            if len(options) == 0:
+                print("All data scrapped.")
+                return
+            
             for option in options:
                 self.province_option_values.append(option)
                 data = await self.province_districts(selector, option)
@@ -76,7 +80,6 @@ class Health_Facilities_Spider:
                     "health_facilities": data["district_health_facilities"]})
                 await self.save_to_database()
 
-            await self.save_to_database()
 
         except StaleElementReferenceException:
             self.driver.refresh()
