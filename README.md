@@ -37,6 +37,6 @@ Contributions to this project are welcome! If you would like to contribute, plea
 
 Before submitting a pull request, please make sure that your changes follow the project’s coding style and that all tests pass.
 
-## icense
+## License
 
 This project is licensed under the MIT License. See the `LICENSE` file for more information.
